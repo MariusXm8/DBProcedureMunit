@@ -26,7 +26,7 @@ CREATE ALIAS modifica AS $$
 void modifica(Connection conn, int id, String nome) throws SQLException {
     String sql = "UPDATE public.persone SET NOME= ? WHERE personaid= ?";
     try (PreparedStatement Input = conn.prepareStatement(sql)) {
-        Input.setString(1, nome);-- this time i change the position
+        Input.setString(1, nome);
         Input.setInt(2, id);
         Input.executeUpdate();
     }
