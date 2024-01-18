@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sockets="http://www.mulesoft.org/schema/mule/sockets"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:dbserver="http://www.mulesoft.org/schema/mule/dbserver"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd
+http://www.mulesoft.org/schema/mule/dbserver http://www.mulesoft.org/schema/mule/dbserver/current/mule-dbserver.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/sockets http://www.mulesoft.org/schema/mule/sockets/current/mule-sockets.xsd">
+	<munit:config name="new-test-suite.xml" >
+		<munit:parameterizations >
+			<munit:parameterization name="local" >
+				<munit:parameters >
+					<munit:parameter propertyName="env" value="test" />
+				</munit:parameters>
+			</munit:parameterization>
+		</munit:parameterizations>
+	</munit:config>
+	<dbserver:config name="MUnit_DB_Server_Config" doc:name="MUnit DB Server Config" doc:id="5b388a9a-a742-4761-a5af-e48845659a4c" >
+		<dbserver:connection database="MuleDb" connectionStringParameters="MODE=MySQL" sqlFile="file.sql"/>
+	</dbserver:config>
+	<db:config name="Database_Config1" doc:name="Database Config" doc:id="372704c1-2bc2-4e2c-8c4f-95e270ed0aff" >
+		<db:generic-connection url="${db.url}" driverClassName="${db.driver}" user="${db.user}" password="${db.pass}"/>
+	</db:config>
+	<munit:test name="checkPropagateHandler" doc:id="732f7ecb-66ae-4d32-a6a7-e743a2d7d064" ignore="true">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock when" doc:id="7ca16c20-9190-499e-94ae-db9652b88e16" processor="raise-error" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="5a3446d9-083a-4d62-8d4d-91629fc8b345" attributeName="doc:id" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<try doc:name="Try" doc:id="60895e96-219c-425f-885f-1947d8674752" >
+				<munit:set-event doc:name="Set Event" doc:id="7db83084-43a7-48ac-b2c6-cfdecba3c6ac" >
+					<munit:payload value='#[{&#10;    "id": 7,&#10;    "nome": "bobi",&#10;    "cognome": "withSelect",&#10;    "eta": 13&#10;}]' />
+				</munit:set-event>
+				<flow-ref doc:name="Flow Reference" doc:id="2cff4a86-f8d6-4f2f-985d-cdfe1f31a7a0" name="aggiungiFlow" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="86d2c3c2-8f56-4eaa-81b7-8c7c9e55e551" type="DB:QUERY_EXECUTION" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:verify-call doc:name="Verify call" doc:id="95353800-1328-46dd-93b9-b038c7d74d11" processor="logger" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="4d5e4477-b6a0-420d-ae22-e845f061115d" attributeName="doc:id" />
+				</munit-tools:with-attributes>
+			</munit-tools:verify-call>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="selectFlowTest" doc:id="70234e23-c4e5-4f03-aa17-ed69173943a4">
+		<munit:execution >
+			<flow-ref doc:name="Flow Reference" doc:id="e305fbb2-b35e-4ae8-a835-42cc06ccb903" name="selectFlow"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="1e7d2b08-c75c-47c3-871f-1b32dd11d81b" actual="#[payload]" expected='#[readUrl("classpath://simplePersone.json")]'/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="aggiungiFlowTest" doc:id="07d02b4f-f5bb-4492-91ab-c3f815e150b3" description="Test">
+		<munit:execution >
+			<set-payload value='#[{&#10;    "id": 9,&#10;    "nome": "munit",&#10;    "cognome": "test",&#10;    "eta": 13&#10;}]' doc:name="body" doc:id="0fa204ed-8304-4e73-983c-f0daf5a910cc" />
+			<flow-ref doc:name="Flow-ref to aggiungiSimpleFlow" doc:id="442ec60e-f885-4ac9-b542-f2c4cecc4518" name="aggiungiSimpleFlow"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="ec06396d-868e-40b4-8faa-dc5d2fd43fe4" actual="#[payload]" expected="persona aggiunta"/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="updateTest" doc:id="6a744dbc-9ff7-4977-af4a-22d7127240d7">
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="959378ba-875e-4af6-8f7d-726dcc19835a" >
+				<munit:attributes value="#[{&#10;	queryParams : { &#10;		id : '2',&#10;		nome: 'ariete'&#10;	}&#10;}]" />
+			</munit:set-event>
+			<flow-ref doc:name="Flow Reference" doc:id="3a0cecaf-6af7-4392-9951-ff916cefeb5b" name="updateFlow"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="17c96785-004e-4393-a0f6-33b2f8323b8e" actual="#[payload]" expected='#[[{&#10;	"ETA": 20,&#10;	"COGNOME": "giugno",&#10;	"NOME": "ariete",&#10;	"PERSONAID": 2&#10;}]]'/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="deleteTest" doc:id="bc8232d5-a12d-47e4-9a07-c64197535e40" >
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="db0709e8-3677-4bd1-80f7-e00db2c8c99d" >
+				<munit:attributes value="#[{&#10;	queryParams : { &#10;		id : '2'&#10;	}&#10;}]" />
+			</munit:set-event>
+			<flow-ref doc:name="Flow Reference" doc:id="2cc3ad92-5d7e-4751-ae5d-290491ed8d28" name="deleteFlow"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="a809f73e-3e20-43b6-95b0-f02e96e23548" actual="#[payload]" expected='#["persona cancellata"]'/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

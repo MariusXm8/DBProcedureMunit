@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_dcd3384c_193c_4891_a228_fd677e10b6f4_Output_Variables_risultato = Array<{|  personaid: Number,   nome: String,   cognome: String,   eta: Number|}>
+

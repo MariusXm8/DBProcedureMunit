@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "nome": "mario",
+    "cognome": "pipa",
+    "eta": 15,
+    "maggiorenne": "no"
+  },
+  {
+    "id": 2,
+    "nome": "ariete",
+    "cognome": "giugno",
+    "eta": 20,
+    "maggiorenne": "si"
+  },
+  {
+    "id": 9,
+    "nome": "munit",
+    "cognome": "test",
+    "eta": 13,
+    "maggiorenne": "no"
+  }
+]

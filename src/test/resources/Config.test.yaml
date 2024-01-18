@@ -1,0 +1,7 @@
+db:
+  url: "jdbc:h2:tcp://localhost/mem:MuleDb"
+  driver: "org.h2.Driver"
+  user: ""
+  pass: ""
+  
+  

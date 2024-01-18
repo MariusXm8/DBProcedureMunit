@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="2b8d1406-fbd3-49a2-8761-06e412f4de5e" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="selectFlow" doc:id="dcd3384c-193c-4891-a228-fd677e10b6f4">
+		<http:listener doc:name="/prova" doc:id="3023f159-adbe-497d-a3b2-0bcf5c7c37bd" config-ref="HTTP_Listener_config" path="/prova" />
+		<db:select doc:name="select * from persone" doc:id="8824ab70-8059-4d16-852e-67daf55b65a6" config-ref="Database_Config" target="risultato">
+			<db:sql><![CDATA[select *
+from persone
+]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="if eta&gt;18 maggiorene" doc:id="f96a211c-c21d-4183-ba9c-1c48c3bb86df">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.risultato map{
+	id: $.personaid,
+	nome:$.nome,
+	cognome:$.cognome,
+	eta:$.eta,
+	maggiorenne: if($.eta>18) "si" else "no"
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="9709b4e6-b890-4ce8-882d-910519eea4f2" message="#[payload]" />
+	</flow>
+	<flow name="aggiungiSimpleFlow" doc:id="3d4d78d7-97a4-43c7-b9e3-e815d0ad542f">
+		<http:listener doc:name="/aggiungi" doc:id="ea253ca4-546a-434e-9a92-623d705fb56d" config-ref="HTTP_Listener_config" path="/aggiungi" allowedMethods="POST" />
+		<db:stored-procedure doc:name="Aggiungi Persone" doc:id="6ba50750-66b1-4478-b301-50d28b884085" config-ref="Database_Config">
+				<db:sql><![CDATA[CALL aggiungi(:id,:nome,:cognome,:eta);
+]]></db:sql>
+				<db:input-parameters><![CDATA[#[{
+	id: payload.id as Number,
+	nome: payload.nome as String,
+	cognome: payload.cognome as String,
+	eta: payload.eta as Number
+}]]]></db:input-parameters>
+			</db:stored-procedure>
+		<set-payload value="persona aggiunta" doc:name="Set Payload" doc:id="7f29d5bc-69b6-474f-9c71-d365803cc08a" />
+		<logger level="INFO" doc:name="Logger" doc:id="fa041d3f-02a5-42a6-ad26-1f882454a475" message="persona aggiunta" />
+	</flow>
+	<flow name="updateFlow" doc:id="9efa8da9-6ecb-4650-960a-3c26f39f7ac3">
+		<http:listener doc:name='/modify?id=""&amp;nome=""' doc:id="f3fc35df-983e-4053-a0ab-28f807b8ece6" config-ref="HTTP_Listener_config" path="/modify" allowedMethods="GET">
+			<http:response>
+				<http:body><![CDATA[#[output application/json
+---
+{
+	"Prima": vars.prima,
+	"modificato":payload
+}]]]></http:body>
+			</http:response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="f3e520b7-752d-4703-b6f6-ed61a8c69de2">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="id"><![CDATA[%dw 2.0
+output application/json
+---
+attributes.queryParams.id]]></ee:set-variable>
+				<ee:set-variable variableName="nome"><![CDATA[%dw 2.0
+output application/json
+---
+attributes.queryParams.nome]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<try doc:name="Try" doc:id="db45a7f8-18b9-42d8-87d1-7d09e2177ade" transactionalAction="ALWAYS_BEGIN">
+			<flow-ref doc:name="Flow Reference" doc:id="4d516461-00d0-4f97-9c3c-3ca4c14d35f0" name="selectWithId" target="prima" />
+			<logger level="INFO" doc:name="Logger" doc:id="4e7bdfdf-c49f-4f32-bc9d-13a9be0b2e9e" message="#[output application/json&#10;---&#10;payload]" />
+			<db:stored-procedure doc:name="Stored procedure" doc:id="2d6d6257-28c0-4035-b7e4-578669e7920b" config-ref="Database_Config">
+				<db:sql><![CDATA[call modifica(:id,:nome)]]></db:sql>
+				<db:input-parameters><![CDATA[#[{
+	id:vars.id as Number,
+	nome:vars.nome as String
+}]]]></db:input-parameters>
+			</db:stored-procedure>
+			<flow-ref doc:name="Flow Reference" doc:id="ab74b62f-6c09-4115-832c-b5618deb3eda" name="selectWithId" />
+			<logger level="INFO" doc:name="Logger" doc:id="b2185079-adbb-4319-90b3-360c466ad29d" message="#[output application/json&#10;---&#10;payload]" />
+		</try>
+	</flow>
+	<flow name="deleteFlow" doc:id="b4f49621-d125-4752-84f9-75f1e3b17b18">
+		<http:listener doc:name="/delete" doc:id="2c82735a-04ed-4694-99b4-b3117a4d76d8" config-ref="HTTP_Listener_config" path="/delete">
+			<http:response>
+				<http:body><![CDATA[#[output application/json
+---
+{
+	prima:vars.prima,
+	dopod:payload
+}]]]></http:body>
+			</http:response>
+		</http:listener>
+		<set-variable value="#[attributes.queryParams.id]" doc:name="Id" doc:id="9673b88d-7a2a-41a7-bf72-30099fd8dd5d" variableName="id" />
+		<try doc:name="Try" doc:id="88b75f15-4d9b-4cb1-b965-2f8ffa5e5875" transactionalAction="ALWAYS_BEGIN">
+			<flow-ref doc:name="Flow Reference" doc:id="718048de-1430-48b2-8358-8dd2a871bedd" name="selectWithId" target="prima" />
+			<db:stored-procedure doc:name="Stored procedure" doc:id="39cd8810-1f7a-44c4-9014-f7c2672d4021" config-ref="Database_Config">
+				<db:sql><![CDATA[call cancella(:id)]]></db:sql>
+				<db:input-parameters><![CDATA[#[{
+	id:vars.Id
+}]]]></db:input-parameters>
+			</db:stored-procedure>
+			<set-payload value="persona cancellata" doc:name="Set Payload" doc:id="49e6ddea-bcd0-452b-b00d-b876b0940543" />
+		</try>
+	</flow>
+	<flow name="selectWithId" doc:id="3e370e7d-e4ee-4014-a6b4-669b45ee57f7" >
+		<db:select doc:name="Select" doc:id="506007af-2a04-4dce-a0b0-72acfe134a97" config-ref="Database_Config">
+			<db:sql><![CDATA[select *
+from persone
+where personaid=:id]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	id:vars.id
+}]]]></db:input-parameters>
+		</db:select>
+	</flow>
+	<flow name="aggiungiFlow" doc:id="e6897289-1dc0-4bc1-9a10-8773324bb2ea" initialState="stopped">
+		<http:listener doc:name="/aggiungi" doc:id="855ac464-4161-44bb-b6f8-e32f593b30e5" config-ref="HTTP_Listener_config" path="/aggiungi" allowedMethods="POST" />
+		<try doc:name="Try with transactions" doc:id="3b208fad-9038-4fb3-b64f-757041d96b81" transactionalAction="BEGIN_OR_JOIN">
+			<db:stored-procedure doc:name="Aggiungi Persone" doc:id="260fd97d-2b2a-4fd9-9339-221cbe5ce4e6" config-ref="Database_Config">
+			<db:sql><![CDATA[CALL aggiungi(:id,:nome,:cognome,:eta);
+]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	id: payload.id as Number,
+	nome: payload.nome as String,
+	cognome: payload.cognome as String,
+	eta: payload.eta as Number
+}]]]></db:input-parameters>
+		
+</db:stored-procedure>
+			<set-payload value="persona aggiunta" doc:name="persona aggiunta" doc:id="730bae95-e089-498e-8cf4-87969d086928" />
+			<raise-error doc:name="Raise error" doc:id="5a3446d9-083a-4d62-8d4d-91629fc8b345" type="CUSTOM:ERROR" description="errore generato" />
+		</try>
+		<logger level="INFO" doc:name="Logger" doc:id="d58eb6d2-6666-4c2d-8432-70520a115cc7" message="persona aggiunta" />
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="90d5867e-fa12-4fac-bbd9-65bfcd6ead87">
+				<logger level="INFO" doc:name="Logger" doc:id="4d5e4477-b6a0-420d-ae22-e845f061115d" message="errore main" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
