@@ -2,4 +2,4 @@ db:
   url: "jdbc:postgresql://localhost:5432/MuleDb"
   driver: "org.postgresql.Driver"
   user: "postgres"
-  pass: "5585"
+  pass: "pass"
