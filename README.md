@@ -1,8 +1,7 @@
-Project detail:
+Project detail
 Create a postgres database via docker, create a table of your choice,
-a stored procedure or a function and use mulesoft to retrieve that database via "select" and "stored procedure".
- 
-Finally create the munit! 
+a stored procedure or a function and use mulesoft to retrieve that database via "select" and "stored procedure".Finally create the munit.
+
 ---
 table name:persone(personaid,nome,cognome,eta)
 Procedures: 
